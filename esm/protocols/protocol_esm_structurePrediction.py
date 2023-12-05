@@ -55,6 +55,11 @@ class ProtESMFoldPrediction(EMProtocol):
                     label='Model to use: ', default=0,
                     help='Choose a model for structure prediction. \nCurrently, only v1 is available')
 
+    mGroup.addParam('chunkSize', params.IntParam, label='Chunk size: ', default=128, expertLevel=params.LEVEL_ADVANCED,
+                    help='chunk size for axial attention. This can help reduce memory.'
+                         'Lower sizes will have lower memory requirements at the cost of increased speed.')
+
+
   def _insertAllSteps(self):
     self._insertFunctionStep(self.predictStep)
     self._insertFunctionStep(self.createOutputStep)
