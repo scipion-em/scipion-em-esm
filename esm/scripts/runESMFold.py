@@ -47,7 +47,6 @@ if __name__ == "__main__":
     sequence, modelName = args.inputSequence, args.ESMModel
     outFile = os.path.join(args.outputDir, args.outputName) + '.pdb'
 
-    torch.cuda.empty_cache()
     model = getattr(esm.pretrained, modelName)()
     model.set_chunk_size(args.chunkSize)
     model.eval().cuda()
