@@ -24,4 +24,4 @@
 # *
 # **************************************************************************
 
-from esm.tests.test_conplex import *
+from esm.tests.test_esmfold import TestESMFold
