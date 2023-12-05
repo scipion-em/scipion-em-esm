@@ -37,7 +37,7 @@ scriptName = 'runESMFold.py'
 
 class ProtESMFoldPrediction(EMProtocol):
   """Run a structural prediction using a ESMFold model over a protein sequence"""
-  _label = 'esm fold structure prediction'
+  _label = 'ESMFold structure prediction'
 
   def __init__(self, **kwargs):
     EMProtocol.__init__(self, **kwargs)
