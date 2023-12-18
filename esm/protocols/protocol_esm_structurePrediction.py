@@ -51,8 +51,8 @@ class ProtESMFoldPrediction(EMProtocol):
                     help="Protein sequences to perform the structur prediction on")
 
     mGroup = form.addGroup('Model')
-    mGroup.addParam('modelName', params.EnumParam, choices=['esmfold_v1'],
-                    label='Model to use: ', default=0,
+    mGroup.addParam('modelName', params.EnumParam, choices=['esmfold_v0', 'esmfold_v1'],
+                    label='Model to use: ', default=1,
                     help='Choose a model for structure prediction. \nCurrently, only v1 is available')
 
     mGroup.addParam('chunkSize', params.IntParam, label='Chunk size: ', default=128, expertLevel=params.LEVEL_ADVANCED,
