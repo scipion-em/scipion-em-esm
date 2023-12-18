@@ -44,6 +44,8 @@ class ProtESMFoldPrediction(EMProtocol):
     self.stepsExecutionMode = params.STEPS_PARALLEL
 
   def _defineParams(self, form):
+    form.addHidden(params.GPU_LIST, params.StringParam, default='0', label="Choose GPU IDs",
+                   help="Add a list of GPU device that can be used")
     form.addSection(label='Input')
     iGroup = form.addGroup('Input')
     iGroup.addParam('inputSequence', params.PointerParam, pointerClass="Sequence",
@@ -70,7 +72,8 @@ class ProtESMFoldPrediction(EMProtocol):
     seqName = self.getInputName()
     cwd = os.path.join(esmPlugin.getVar(ESM_DIC['home']), 'esm')
 
-    args = f'-i {sequence} -m {model} -o {seqName} -od {os.path.abspath(self._getPath())} '
+    args = f'-i {sequence} -m {model} -o {seqName} -od {os.path.abspath(self._getPath())} ' \
+           f'-g {self.gpuList.get().split(",")[0]}'
     esmPlugin.runScript(self, scriptName, args, envDict=ESM_DIC, cwd=cwd)
 
   def createOutputStep(self):

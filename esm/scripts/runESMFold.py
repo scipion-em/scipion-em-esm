@@ -48,10 +48,10 @@ if __name__ == "__main__":
     sequence, modelName = args.inputSequence, args.ESMModel
     outFile = os.path.join(args.outputDir, args.outputName) + '.pdb'
 
-    torch.cuda.device(args.gpuId)
     model = getattr(esm.pretrained, modelName)()
+    model = model.to(torch.device(f'cuda:{args.gpuId}'))
     model.set_chunk_size(args.chunkSize)
-    model.eval().cuda()
+    model.eval()
 
     with torch.no_grad():
       output = model.infer_pdb(sequence)
