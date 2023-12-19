@@ -41,6 +41,8 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--outputName', type=str, help='Output name')
     parser.add_argument('-od', '--outputDir', type=str, help='Output directory')
     parser.add_argument('-m', '--ESMModel', type=str, default='esmfold_v1', help='ESMFold model to use')
+
+    parser.add_argument('-nr', '--numberRecycles', type=int, default=4, help='Number of recycles')
     parser.add_argument('-cs', '--chunkSize', type=int, default=128, help='Chunk size to use the model')
     parser.add_argument('-g', '--gpuId', type=int, default=0, help='GPU index to use')
 
@@ -54,7 +56,7 @@ if __name__ == "__main__":
     model.eval()
 
     with torch.no_grad():
-      output = model.infer_pdb(sequence)
+      output = model.infer_pdb(sequence, num_recycles=args.numberRecycles)
 
     with open(outFile, "w") as f:
       f.write(output)

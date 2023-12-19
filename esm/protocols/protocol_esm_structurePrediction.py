@@ -63,10 +63,6 @@ class ProtESMFoldPrediction(EMProtocol):
 
     mGroup.addParam('nRecycles', params.IntParam, label='Number of recycles: ', default=4,
                     help='Number of recycles to run. Defaults to number used in training (4)')
-    mGroup.addParam('maxTokens', params.IntParam, label='Maximum number of tokens per GPU forward-pass: ', default=4,
-                    expertLevel=params.LEVEL_ADVANCED,
-                    help='Maximum number of tokens per gpu forward-pass. This will group shorter sequences together '
-                         'for batched prediction. Lowering this can help with o')
     mGroup.addParam('chunkSize', params.IntParam, label='Chunk size: ', default=64, expertLevel=params.LEVEL_ADVANCED,
                     help='Chunks axial attention computation to reduce memory usage from O(L^2) to O(L). '
                          'Equivalent to running a for loop over chunks of of each dimension. '
@@ -85,7 +81,7 @@ class ProtESMFoldPrediction(EMProtocol):
 
     args = f' -i {sequence} -m {model} -o {seqName} -od {os.path.abspath(self._getPath())}' \
            f' -g {self.gpuList.get().split(",")[0]}' \
-           f' -cs {self.chunkSize.get()} -nr {self.chunkSize.get()} -mt {self.maxTokens.get()}'
+           f' -cs {self.chunkSize.get()} -nr {self.nRecycles.get()}'
     esmPlugin.runScript(self, scriptName, args, envDict=ESM_DIC, cwd=cwd)
 
   def createOutputStep(self):
@@ -99,7 +95,7 @@ class ProtESMFoldPrediction(EMProtocol):
       esmDic = self.getESMFoldScoreDic()
       inpAS = toCIF(fnOut, self._getTmpPath('inputStruct.cif'))
       cifDic = ASH.readLowLevel(inpAS)
-      cifDic = addScipionAttribute(cifDic, esmDic, self._ATTRNAME)
+      cifDic = addScipionAttribute(cifDic, esmDic, self._ATTRNAME, recipient='atoms')
       ASH._writeLowLevel(outStructFileName, cifDic)
 
       outAS = AtomStruct(filename=outStructFileName)
@@ -113,12 +109,12 @@ class ProtESMFoldPrediction(EMProtocol):
 
     esmDic = {}
     for model in ASH.structure:
-      for residue in model.get_residues():
-        fId = residue.get_resname()
-        chainName, resNumber = fId[2], fId[3][1]
-        resId = '{}:{}'.format(chainName, resNumber)
-        fscq_atom = residue.get_bfactor()
-        esmDic[resId] = fscq_atom
+      for atom in model.get_atoms():
+        fId = atom.get_full_id()
+        chainName, resNumber, atomName = fId[2], fId[3][1], fId[4][0]
+        atomId = '{}:{}@{}'.format(chainName, resNumber, atomName)
+        esmScore = atom.get_bfactor()
+        esmDic[atomId] = esmScore
 
     return esmDic
 
