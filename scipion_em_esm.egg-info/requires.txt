@@ -1,3 +1,0 @@
-scipion-pyworkflow
-scipion-em
-scipion-app

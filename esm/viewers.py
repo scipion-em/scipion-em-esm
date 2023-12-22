@@ -1,6 +1,6 @@
 # **************************************************************************
 # *
-# * Authors:     Daniel Del Hoyo Gomez (ddelhoyo@cnb.csic.es)
+# * Authors: Daniel Del Hoyo (ddelhoyo@cnb.csic.es)
 # *
 # * Unidad de  Bioinformatica of Centro Nacional de Biotecnologia , CSIC
 # *
@@ -24,4 +24,28 @@
 # *
 # **************************************************************************
 
-from esm.tests.test_esmfold import TestESMFold
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+
+from pyworkflow.protocol import params
+from pwem.viewers import ChimeraAttributeViewer
+
+from .protocols import ProtESMFoldPrediction
+
+class ESMFoldStructureViewer(ChimeraAttributeViewer):
+    """ Viewer for ESMFold protocol.
+      Includes structure visualization in chimera and in histograms or sequence regions"""
+    _targets = [ProtESMFoldPrediction]
+    _label = 'ESMFold viewer'
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _defineParams(self, form):
+        super()._defineParams(form)
+        # Overwrite defaults
+        from pwem.wizards.wizard import ColorScaleWizardBase
+        group = form.addGroup('Color settings')
+        ColorScaleWizardBase.defineColorScaleParams(group, defaultLowest=0, defaultHighest=100, defaultIntervals=21,
+                                                    defaultColorMap='RdBu')

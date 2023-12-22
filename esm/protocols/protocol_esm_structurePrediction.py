@@ -29,6 +29,7 @@ import os, glob, shutil, subprocess
 from pyworkflow.protocol import params
 from pwem.protocols import EMProtocol
 from pwem.objects import AtomStruct
+from pwem.convert.atom_struct import toCIF, AtomicStructHandler, addScipionAttribute
 
 from .. import Plugin as esmPlugin
 from ..constants import ESM_DIC
@@ -37,13 +38,18 @@ scriptName = 'runESMFold.py'
 
 class ProtESMFoldPrediction(EMProtocol):
   """Run a structural prediction using a ESMFold model over a protein sequence"""
-  _label = 'esm fold structure prediction'
+  _label = 'ESMFold structure prediction'
+  _ATTRNAME = 'ESMFoldScore'
+  _OUTNAME = 'outputStructure'
+  _possibleOutputs = {_OUTNAME: AtomStruct}
 
   def __init__(self, **kwargs):
     EMProtocol.__init__(self, **kwargs)
     self.stepsExecutionMode = params.STEPS_PARALLEL
 
   def _defineParams(self, form):
+    form.addHidden(params.GPU_LIST, params.StringParam, default='0', label="Choose GPU IDs",
+                   help="Add a list of GPU device that can be used")
     form.addSection(label='Input')
     iGroup = form.addGroup('Input')
     iGroup.addParam('inputSequence', params.PointerParam, pointerClass="Sequence",
@@ -51,13 +57,16 @@ class ProtESMFoldPrediction(EMProtocol):
                     help="Protein sequences to perform the structur prediction on")
 
     mGroup = form.addGroup('Model')
-    mGroup.addParam('modelName', params.EnumParam, choices=['esmfold_v1'],
-                    label='Model to use: ', default=0,
+    mGroup.addParam('modelName', params.EnumParam, choices=['esmfold_v0', 'esmfold_v1'],
+                    label='Model to use: ', default=1,
                     help='Choose a model for structure prediction. \nCurrently, only v1 is available')
 
-    mGroup.addParam('chunkSize', params.IntParam, label='Chunk size: ', default=128, expertLevel=params.LEVEL_ADVANCED,
-                    help='chunk size for axial attention. This can help reduce memory.'
-                         'Lower sizes will have lower memory requirements at the cost of increased speed.')
+    mGroup.addParam('nRecycles', params.IntParam, label='Number of recycles: ', default=4,
+                    help='Number of recycles to run. Defaults to number used in training (4)')
+    mGroup.addParam('chunkSize', params.IntParam, label='Chunk size: ', default=64, expertLevel=params.LEVEL_ADVANCED,
+                    help='Chunks axial attention computation to reduce memory usage from O(L^2) to O(L). '
+                         'Equivalent to running a for loop over chunks of of each dimension. '
+                         'Lower values will result in lower memory usage at the cost of speed.')
 
 
   def _insertAllSteps(self):
@@ -70,14 +79,44 @@ class ProtESMFoldPrediction(EMProtocol):
     seqName = self.getInputName()
     cwd = os.path.join(esmPlugin.getVar(ESM_DIC['home']), 'esm')
 
-    args = f'-i {sequence} -m {model} -o {seqName} -od {os.path.abspath(self._getPath())} '
+    args = f' -i {sequence} -m {model} -o {seqName} -od {os.path.abspath(self._getPath())}' \
+           f' -g {self.gpuList.get().split(",")[0]}' \
+           f' -cs {self.chunkSize.get()} -nr {self.nRecycles.get()}'
     esmPlugin.runScript(self, scriptName, args, envDict=ESM_DIC, cwd=cwd)
 
   def createOutputStep(self):
     fnOut = self._getPath(f'{self.getInputName()}.pdb')
+
     if os.path.exists(fnOut):
-      target = AtomStruct(filename=fnOut)
-      self._defineOutputs(outputStructure=target)
+      outStructFileName = self._getPath('outputStructureESMFold.cif')
+      # Write conservation in a section of the output cif file
+      ASH = AtomicStructHandler()
+
+      esmDic = self.getESMFoldScoreDic()
+      inpAS = toCIF(fnOut, self._getTmpPath('inputStruct.cif'))
+      cifDic = ASH.readLowLevel(inpAS)
+      cifDic = addScipionAttribute(cifDic, esmDic, self._ATTRNAME, recipient='atoms')
+      ASH._writeLowLevel(outStructFileName, cifDic)
+
+      outAS = AtomStruct(filename=outStructFileName)
+      self._defineOutputs(outputStructure=outAS)
+
+
+  def getESMFoldScoreDic(self):
+    fnOut = self._getPath(f'{self.getInputName()}.pdb')
+    ASH = AtomicStructHandler()
+    ASH.read(fnOut)
+
+    esmDic = {}
+    for model in ASH.structure:
+      for atom in model.get_atoms():
+        fId = atom.get_full_id()
+        chainName, resNumber, atomName = fId[2], fId[3][1], fId[4][0]
+        atomId = '{}:{}@{}'.format(chainName, resNumber, atomName)
+        esmScore = atom.get_bfactor()
+        esmDic[atomId] = esmScore
+
+    return esmDic
 
   def getInputSequence(self):
     return self.inputSequence.get().getSequence()
