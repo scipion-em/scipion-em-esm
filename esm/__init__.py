@@ -36,6 +36,7 @@ import os, subprocess, json
 import pwem
 from scipion.install.funcs import InstallHelper
 
+from pyworkflow import SPA
 # Plugin imports
 from .bibtex import _bibtexStr
 from .constants import *
@@ -47,6 +48,7 @@ class Plugin(pwem.Plugin):
 	"""
 	"""
 	_dfdHome = os.path.join(pwem.Config.EM_ROOT, ESM_DIC['name'] + '-' + ESM_DIC['version'])
+	_processingField = [SPA]
 
 	@classmethod
 	def _defineVariables(cls):
