@@ -38,6 +38,50 @@ scriptName = 'runESMFold.py'
 
 class ProtESMFoldPrediction(EMProtocol):
   """Run a structural prediction using a ESMFold model over a protein sequence"""
+  """
+  The ProtESMFoldPrediction class implements a structural prediction
+  protocol based on the ESMFold deep learning model for protein structure
+  inference from amino acid sequences. The protocol is designed to predict
+  three-dimensional atomic models directly from an input protein sequence,
+  providing an automated workflow for structural modeling within Scipion
+  frameworks.
+
+  The protocol operates by receiving a protein sequence as input together
+  with a selected ESMFold model configuration. Users can define execution
+  parameters such as the number of recycles used during prediction,
+  chunk size for memory optimization, and GPU selection for accelerated
+  computation. The implementation supports parallel execution and is
+  optimized for handling large protein sequences efficiently through axial
+  attention chunking strategies that reduce memory consumption.
+
+  During execution, the protocol constructs the required command-line
+  arguments and launches the ESMFold prediction script within the
+  configured environment. The prediction step generates a structural model
+  in PDB format corresponding to the inferred three-dimensional
+  conformation of the input sequence.
+
+  After prediction, the protocol converts the generated structure into a
+  CIF representation and enriches it with confidence-related information
+  extracted from the model output. The implementation reads atom-level
+  B-factor values from the predicted structure and interprets them as
+  ESMFold confidence scores. These scores are stored as additional
+  Scipion-compatible attributes associated with the atomic coordinates,
+  allowing downstream protocols and visualization tools to access residue
+  confidence information directly.
+
+  The protocol finally produces an output atomic structure object
+  containing the predicted model and its associated confidence metadata.
+  This output can subsequently be used for structural visualization,
+  comparative analysis, fitting into cryo-EM maps, or additional
+  computational modeling workflows.
+
+  Overall, ProtESMFoldPrediction provides an integrated framework for
+  protein structure prediction using ESMFold models, combining automated
+  sequence-based inference, GPU-accelerated execution, memory-efficient
+  processing, and confidence score integration into a unified structural
+  modeling workflow.
+  """
+
   _label = 'ESMFold structure prediction'
   _ATTRNAME = 'ESMFoldScore'
   _OUTNAME = 'outputStructure'
